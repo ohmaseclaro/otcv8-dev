@@ -106,7 +106,7 @@ void Proxy::connect()
             }
             endpoint = boost::asio::ip::tcp::endpoint(address, self->m_port);
         } else {
-            endpoint = boost::asio::ip::tcp::endpoint(*results);
+            endpoint = results.begin()->endpoint();
             endpoint.port(self->m_port);
         }
         self->m_resolvedIp = endpoint.address().to_string();

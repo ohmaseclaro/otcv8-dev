@@ -52,11 +52,12 @@ void HttpSession::start() {
     m_resolver.async_resolve(m_domain, std::to_string(m_port), std::bind(&HttpSession::on_resolve, shared_from_this(), std::placeholders::_1, std::placeholders::_2));
 }
 
-void HttpSession::on_resolve(const boost::system::error_code& ec, boost::asio::ip::tcp::resolver::iterator iterator) {
+void HttpSession::on_resolve(const boost::system::error_code& ec, const boost::asio::ip::tcp::resolver::results_type& endpoints) {
     if (ec)
         return onError("resolve error", ec.message());
-    iterator->endpoint().port(m_port);
-    m_socket.async_connect(*iterator, std::bind(&HttpSession::on_connect, shared_from_this(), std::placeholders::_1));
+    if (endpoints.empty())
+        return onError("resolve error", "No endpoint found");
+    m_socket.async_connect(endpoints.begin()->endpoint(), std::bind(&HttpSession::on_connect, shared_from_this(), std::placeholders::_1));
 }
 
 void HttpSession::on_connect(const boost::system::error_code& ec) {
