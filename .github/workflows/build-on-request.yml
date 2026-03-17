@@ -29,7 +29,7 @@ jobs:
 
       - name: Integrate vcpkg
         run: |
-          ${{ runner.workspace }}/vcpkg/vcpkg integrate install
+          ${{ runner.workspace }}\vcpkg\vcpkg integrate install
 
       - name: Compile otclient_dx
         timeout-minutes: 20
@@ -49,9 +49,9 @@ jobs:
       #     .\tools\sign\signtool.exe sign /f .\tools\sign\certificate.pfx /p ${{ secrets.SIGN_PASSWORD }} /fd SHA256 /t http://timestamp.digicert.com /d "OTclientV8" otclient_dx.exe
 
       - name: Upload binaries
-        uses: "actions/upload-artifact@v2"
+        uses: actions/upload-artifact@v4
         with:
-          name: Download-binaries
+          name: Download-binaries-windows
           path: |
             otclient_gl.exe
             otclient_dx.exe
@@ -96,9 +96,9 @@ jobs:
           MSBuild.exe /p:Configuration=Release /p:Platform="ARM64" /p:BUILD_REVISION=${{github.run_number}}
 
       - name: Upload binaries
-        uses: "actions/upload-artifact@v2"
+        uses: actions/upload-artifact@v4
         with:
-          name: Download-binaries
+          name: Download-binaries-android
           path: |
             otclientv8.apk
           if-no-files-found: error
@@ -144,9 +144,9 @@ jobs:
           mv '${{ runner.workspace }}/build/otclient' '${{ runner.workspace }}/build/otclient_mac'
 
       - name: Upload otclient
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: Download-binaries
+          name: Download-binaries-mac
           path: |
             ${{ runner.workspace }}/build/otclient_mac
           if-no-files-found: error
@@ -192,9 +192,9 @@ jobs:
           mv '${{ runner.workspace }}/build/otclient' '${{ runner.workspace }}/build/otclient_linux'
 
       - name: Upload otclient
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: Download-binaries
+          name: Download-binaries-linux
           path: |
             ${{ runner.workspace }}/build/otclient_linux
           if-no-files-found: error

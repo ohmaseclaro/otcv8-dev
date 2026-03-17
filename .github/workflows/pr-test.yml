@@ -38,9 +38,9 @@ jobs:
           MSBuild /property:Configuration=OpenGL /p:BUILD_REVISION=${{github.run_number}}
 
       - name: Upload binaries
-        uses: "actions/upload-artifact@v2"
+        uses: actions/upload-artifact@v4
         with:
-          name: Binaries
+          name: Binaries-windows
           path: |
             otclient_gl.exe
             otclient_dx.exe
@@ -85,9 +85,9 @@ jobs:
           MSBuild.exe /p:Configuration=Release /p:Platform="ARM64" /p:BUILD_REVISION=${{github.run_number}}
 
       - name: Upload binaries
-        uses: "actions/upload-artifact@v2"
+        uses: actions/upload-artifact@v4
         with:
-          name: Binaries
+          name: Binaries-android
           path: |
             otclientv8.apk
           if-no-files-found: error
@@ -132,9 +132,9 @@ jobs:
           mv '${{ runner.workspace }}/build/otclient' '${{ runner.workspace }}/build/otclient_mac'
 
       - name: Upload otclient
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: Binaries
+          name: Binaries-mac
           path: |
             ${{ runner.workspace }}/build/otclient_mac
           if-no-files-found: error
@@ -179,9 +179,9 @@ jobs:
           mv '${{ runner.workspace }}/build/otclient' '${{ runner.workspace }}/build/otclient_linux'
 
       - name: Upload otclient
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: Binaries
+          name: Binaries-linux
           path: |
             ${{ runner.workspace }}/build/otclient_linux
           if-no-files-found: error
@@ -198,9 +198,10 @@ jobs:
           submodules: recursive
 
       - name: Download binaries
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
-          name: Binaries
+          pattern: Binaries-*
+          merge-multiple: true
 
       - name: Run tests
         timeout-minutes: 10
@@ -213,7 +214,7 @@ jobs:
           }
 
       - name: Upload otclientv8.log
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           path: otclientv8.log
           name: Download-otclientv8.log
@@ -241,7 +242,7 @@ jobs:
           | Copy-Item -Destination screenshots -Force -PassThru
 
       - name: Upload screenshot
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           path: screenshots
           name: Download-screenshots
@@ -251,7 +252,7 @@ jobs:
           Remove-Item 'data\things' -Recurse
 
       - name: Upload otclient
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: Download-otclientv8
           path: |
