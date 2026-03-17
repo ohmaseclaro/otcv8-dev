@@ -322,7 +322,7 @@ void Session::terminate(boost::system::error_code ec)
             boost::system::error_code ecc;
             m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ecc);
             m_socket.close(ecc);
-            m_timer.cancel(ecc);
+            m_timer.cancel();
         } else if (m_disconnectCallback) {
             m_disconnectCallback(ec);
         }
