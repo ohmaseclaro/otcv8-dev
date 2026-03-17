@@ -82,7 +82,8 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 120
     continue-on-error: true
-
+    # Disabled for now; re-enable by removing the line below
+    if: false
     steps:
       - name: Checkout
         uses: actions/checkout@v2

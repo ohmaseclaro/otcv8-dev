@@ -88,13 +88,9 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 60
     continue-on-error: true
-    if: |
-      !contains(github.event.head_commit.message, '[skip release]')
-      && (
-        startsWith(github.ref, 'refs/tags/')
-        || github.ref == 'refs/heads/main'
-        || github.ref == 'refs/heads/master'
-      )
+    # Disabled for now; re-enable by replacing false with the condition below:
+    # if: !contains(...'[skip release]') && (startsWith(github.ref,'refs/tags/') || github.ref=='refs/heads/main' || github.ref=='refs/heads/master')
+    if: false
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -161,7 +157,7 @@ jobs:
   Release:
     name: Test and release
     runs-on: windows-2022
-    needs: [Windows, Mac]
+    needs: [Windows]
     timeout-minutes: 120
     if: |
       !contains(github.event.head_commit.message, '[skip release]')
