@@ -33,7 +33,6 @@ jobs:
           vcpkgDirectory: ${{ runner.workspace }}/vcpkg/
           vcpkgTriplet: x86-windows-static
           vcpkgGitCommitId: 4bc3a47c7a63506e215e04e1473368adbaea6c27
-          doNotCache: true
           vcpkgArguments: >
             boost-iostreams boost-asio boost-beast boost-system boost-variant boost-lockfree boost-process boost-program-options boost-uuid boost-filesystem
             luajit glew physfs openal-soft libogg libvorbis zlib libzip bzip2 openssl liblzma
