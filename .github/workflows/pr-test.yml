@@ -16,27 +16,19 @@ jobs:
         uses: microsoft/setup-msbuild@v1.0.2
         id: setup_msbuild
 
-      - name: Prepare vcpkg cache directories
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path "${{ runner.workspace }}\vcpkg\downloads" | Out-Null
-          New-Item -ItemType Directory -Force -Path "${{ runner.workspace }}\vcpkg\bincache" | Out-Null
-
-      - name: Restore vcpkg binary/download cache
+      - name: Restore vcpkg cache
         id: vcpkg-cache-restore
         uses: actions/cache/restore@v4
         with:
-          key: vcpkg-win-x86-static-4bc3a47c7a63506e215e04e1473368adbaea6c27-v2
+          key: vcpkg-win-x86-static-4bc3a47c7a63506e215e04e1473368adbaea6c27-v3
           restore-keys: |
             vcpkg-win-x86-static-4bc3a47c7a63506e215e04e1473368adbaea6c27-
             vcpkg-win-x86-static-
-          path: |
-            ${{ runner.workspace }}/vcpkg/downloads
-            ${{ runner.workspace }}/vcpkg/bincache
+          path: ${{ runner.workspace }}/vcpkg
 
       - name: Run vcpkg
-        env:
-          VCPKG_BINARY_SOURCES: clear;files,${{ runner.workspace }}\vcpkg\bincache,readwrite
+        id: run-vcpkg
+        if: steps.vcpkg-cache-restore.outputs.cache-hit != 'true'
         uses: lukka/run-vcpkg@v7
         with:
           vcpkgDirectory: ${{ runner.workspace }}/vcpkg/
@@ -47,15 +39,12 @@ jobs:
             boost-iostreams boost-asio boost-beast boost-system boost-variant boost-lockfree boost-process boost-program-options boost-uuid boost-filesystem
             luajit glew physfs openal-soft libogg libvorbis zlib libzip bzip2 openssl liblzma
 
-
-      - name: Save vcpkg binary/download cache
-        if: always() && steps.vcpkg-cache-restore.outputs.cache-hit != 'true'
+      - name: Save vcpkg cache
+        if: steps.vcpkg-cache-restore.outputs.cache-hit != 'true' && steps.run-vcpkg.outcome == 'success'
         uses: actions/cache/save@v4
         with:
-          key: vcpkg-win-x86-static-4bc3a47c7a63506e215e04e1473368adbaea6c27-v2
-          path: |
-            ${{ runner.workspace }}/vcpkg/downloads
-            ${{ runner.workspace }}/vcpkg/bincache
+          key: vcpkg-win-x86-static-4bc3a47c7a63506e215e04e1473368adbaea6c27-v3
+          path: ${{ runner.workspace }}/vcpkg
 
       - name: Integrate vcpkg
         run: |
