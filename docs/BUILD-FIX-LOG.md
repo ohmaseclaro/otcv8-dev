@@ -88,6 +88,57 @@ This document records individual build fixes applied after the initial CI/CD and
 
 ---
 
+## Fix 3: Remaining Boost.Asio API changes (connection, timer, buffer, address)
+
+**Context:** Windows build failed in `connection.cpp` (and related) with multiple Boost 1.90 Asio API errors: `io_context::reset`, timer `expires_from_now`, `buffer_cast`, and `address_v4::to_ulong`.
+
+### Errors
+
+1. **C2039: 'reset': is not a member of 'boost::asio::io_context'** (connection.cpp line 57)  
+   In Boost.Asio, `io_context` uses `restart()` instead of `reset()` to clear the stopped state.
+
+2. **C2039: 'expires_from_now': is not a member of '...basic_waitable_timer<...>'** (connection.cpp lines 105, 117, 135, 157, 173, 190, 205)  
+   In Boost.Asio 1.24+, the timer API was renamed: `expires_from_now(duration)` → `expires_after(duration)`.
+
+3. **C2039: 'buffer_cast': is not a member of 'boost::asio'** (connection.cpp line 285)  
+   `boost::asio::buffer_cast` was removed. Use `boost::asio::buffers_begin(stream.data())` and take the address of the first element (`&*it`) to get a pointer.
+
+4. **C2039: 'to_ulong': is not a member of 'boost::asio::ip::address_v4'** (connection.cpp line 321, stdext/net.cpp)  
+   In Boost.Asio, `address_v4::to_ulong()` was removed; use `to_uint()` instead (returns `uint32_t`).
+
+### Changes
+
+**File: `src/framework/net/connection.cpp`**
+
+- **poll():** `g_ioService.reset()` → `g_ioService.restart()`.
+- **Timers:** All `m_readTimer.expires_from_now(...)`, `m_delayedWriteTimer.expires_from_now(...)`, `m_writeTimer.expires_from_now(...)` → `expires_after(...)`.
+- **onRecv:** Replace `boost::asio::buffer_cast<const char*>(m_inputStream.data())` with:
+  ```cpp
+  auto it = boost::asio::buffers_begin(m_inputStream.data());
+  const char* header = recvSize > 0 ? &*it : nullptr;
+  ```
+- **getIp():** `ip.address().to_v4().to_ulong()` → `ip.address().to_v4().to_uint()`.
+
+**File: `src/framework/proxy/proxy_client.cpp`**
+
+- Both timer calls: `m_timer.expires_from_now(...)` → `m_timer.expires_after(...)`.
+- In the destructor/lambda (line 40): `m_timer.cancel(ec)` → `m_timer.cancel()` (same as Fix 1; timer no longer takes an error_code).
+
+**File: `src/framework/stdext/net.cpp`**
+
+- **string_to_ip:** `address_v4.to_ulong()` → `address_v4.to_uint()`.
+
+### Summary
+
+| Issue | Cause | Fix |
+|-------|--------|-----|
+| `io_context::reset` | Removed in favor of `restart()` | `g_ioService.restart()` |
+| `expires_from_now` | Renamed in Asio 1.24+ | `expires_after(duration)` |
+| `buffer_cast` | Removed from Asio | `buffers_begin(stream.data())`, then `&*it` |
+| `address_v4::to_ulong` | Removed | `address_v4.to_uint()` |
+
+---
+
 ## Next fixes
 
 *(Add new sections below as new build errors are fixed.)*

@@ -53,6 +53,16 @@ This document records all changes made to get the GitHub Actions Windows build p
 - **Why:** Boost.Process v2 (from Boost 1.90 in the updated vcpkg) caused Windows build errors (`startup_info`, `child`, `args`, `DeleteProcThreadAttributeList`). We replaced its usage with native platform APIs.
 - **Change:** Removed `boost-process` from the vcpkg package lists in all three workflows (Windows and, where present, Mac). Also removed from the README install line.
 
+### 1.9 macOS vcpkg cache (same pattern as Windows)
+
+- **Why:** Mac job was failing with “fatal: not a git repository” when `run-vcpkg` tried to detect the vcpkg commit from the directory (empty or not a clone), and “Install/Update ports” could fail with exit code 1. Applying the same explicit cache as Windows avoids re-running vcpkg on cache hit and avoids relying on the action’s git detection.
+- **Change:** In all three workflows, the Mac job now has:
+  - **Restore:** “Restore vcpkg cache” using `actions/cache/restore@v4` with key `vcpkg-mac-x64-osx-761c81d43335a5d5ccc2ec8ad90bd7e2cbba734e-v1`, path `${{ runner.workspace }}/vcpkg`, and restore-keys for partial matches.
+  - **Skip install on hit:** “Run vcpkg” has `if: steps.vcpkg-cache-restore.outputs.cache-hit != 'true'`.
+  - **doNotCache: true** on the run-vcpkg step so the action does not use its built-in cache (which depended on git in the vcpkg directory).
+  - **Save:** “Save vcpkg cache” runs only when cache was not restored and run-vcpkg succeeded.
+- **Result:** On cache hit, the full vcpkg tree (including installed ports) is restored and run-vcpkg is skipped, so no git repo is required. On cache miss, vcpkg runs once; if it succeeds, the next run will use the cache. If “Install/Update ports” still fails on first run, check the workflow log for the failing port and fix or pin as needed.
+
 ---
 
 ## 2. Application code: Boost version compatibility
@@ -86,6 +96,30 @@ This document records all changes made to get the GitHub Actions Windows build p
 - **Why:** Avoid using `boost::asio::detail::socket_ops::host_to_network_long` and similar internals.
 - **connection.cpp:** `#include <boost/endian/conversion.hpp>`; `host_to_network_long(...)` → `boost::endian::native_to_big(...)`.
 - **src/framework/stdext/net.cpp:** `#include <boost/endian/conversion.hpp>`; `network_to_host_long` → `big_to_native`, `host_to_network_long` → `native_to_big` (including in `listSubnetAddresses`).
+
+### 2.4 Other Boost.Asio 1.90 API changes (io_context, timer, buffer, address_v4)
+
+- **io_context:** `reset()` was removed; use `restart()` to clear the stopped state before calling `poll()` again (e.g. in `connection.cpp` `poll()`).
+- **basic_waitable_timer:** `expires_from_now(duration)` was removed; use `expires_after(duration)` everywhere (connection.cpp, proxy_client.cpp). Also `cancel(ec)` → `cancel()` (see BUILD-FIX-LOG Fix 1).
+- **buffer_cast:** `boost::asio::buffer_cast<T>(buf)` was removed. To get a pointer from a streambuf’s data, use `boost::asio::buffers_begin(m_inputStream.data())` and then `&*it` (with a check for empty/recvSize if needed).
+- **address_v4:** `to_ulong()` was removed; use `to_uint()` (returns `uint32_t`) in connection.cpp and stdext/net.cpp.
+- **Timer cancel:** `cancel(ec)` → `cancel()` in session.cpp (Fix 1) and proxy_client.cpp (same pattern).
+
+### 2.5 Full Boost usage audit (Boost 1.90)
+
+All Boost-using sources have been checked for 1.90 compatibility. Summary:
+
+| Area | Files | Status |
+|------|--------|--------|
+| **Asio (net)** | connection.cpp/h, server.cpp, protocol.cpp, declarations.h | §2.1–2.4 applied (io_context, resolver, timer, buffer, endian, address_v4). |
+| **Asio (HTTP/WS)** | session.cpp/h, websocket.cpp/h, http.cpp/h | io_context, resolver results_type, timer cancel/expires_after, Beast field string_view→string; make_work_guard + executor_work_guard still valid in 1.90. |
+| **Asio (proxy)** | proxy_client.cpp/h, proxy.cpp, proxy.h | resolver results_type, timer expires_after + cancel(), endpoint from results. |
+| **Beast** | session.cpp, websocket.cpp, pch.h | Field access via .data()/.size(); timer cancel(); buffers_to_string, get_lowest_layer, async_read/write unchanged. |
+| **Endian** | connection.cpp, stdext/net.cpp | boost::endian::native_to_big / big_to_native (§2.3, §2.4). |
+| **Other Boost** | pch.h (system, asio, beast, algorithm/hex), stdext (algorithm, lexical_cast, uri), crypt.cpp/h (uuid, hash), otml (tokenizer), win32platform (algorithm), packet_player (algorithm::unhex), uitranslator (algorithm), string.cpp (algorithm) | No deprecated APIs used; algorithm, uuid, tokenizer, lexical_cast, functional/hash stable in 1.90. |
+| **Removed** | Boost.Process | Replaced with platform spawnProcessAndWait (§3). |
+
+No remaining uses of: `io_service`, `resolver::query`, resolver iterator, `socket_ops`, `expires_from_now`, `buffer_cast`, `address_v4::to_ulong`, Beast field `.to_string()`, or timer `.cancel(ec)`.
 
 ---
 

@@ -53,8 +53,8 @@ Connection::~Connection()
 void Connection::poll()
 {
     AutoStat s(STATS_MAIN, "PollConnection");
-    // reset must always be called prior to poll
-    g_ioService.reset();
+    // restart must always be called prior to poll (after a previous stop)
+    g_ioService.restart();
     g_ioService.poll();
 }
 
@@ -102,7 +102,7 @@ void Connection::connect(const std::string& host, uint16 port, const std::functi
                              std::bind(&Connection::onResolve, asConnection(), std::placeholders::_1, std::placeholders::_2));
 
     m_readTimer.cancel();
-    m_readTimer.expires_from_now(std::chrono::seconds(READ_TIMEOUT));
+    m_readTimer.expires_after(std::chrono::seconds(READ_TIMEOUT));
     m_readTimer.async_wait(std::bind(&Connection::onTimeout, asConnection(), std::placeholders::_1));
 }
 
@@ -114,7 +114,7 @@ void Connection::internal_connect(const asio::ip::tcp::resolver::results_type& e
                         });
 
     m_readTimer.cancel();
-    m_readTimer.expires_from_now(std::chrono::seconds(READ_TIMEOUT));
+    m_readTimer.expires_after(std::chrono::seconds(READ_TIMEOUT));
     m_readTimer.async_wait(std::bind(&Connection::onTimeout, asConnection(), std::placeholders::_1));
 }
 
@@ -132,7 +132,7 @@ void Connection::write(uint8* buffer, size_t size)
             m_outputStream = std::shared_ptr<asio::streambuf>(new asio::streambuf);
 
         m_delayedWriteTimer.cancel();
-        m_delayedWriteTimer.expires_from_now(std::chrono::milliseconds(0));
+        m_delayedWriteTimer.expires_after(std::chrono::milliseconds(0));
         m_delayedWriteTimer.async_wait(std::bind(&Connection::onCanWrite, asConnection(), std::placeholders::_1));
     }
 
@@ -154,7 +154,7 @@ void Connection::internal_write()
                       std::bind(&Connection::onWrite, asConnection(), std::placeholders::_1, std::placeholders::_2, outputStream));
 
     m_writeTimer.cancel();
-    m_writeTimer.expires_from_now(std::chrono::seconds(WRITE_TIMEOUT));
+    m_writeTimer.expires_after(std::chrono::seconds(WRITE_TIMEOUT));
     m_writeTimer.async_wait(std::bind(&Connection::onTimeout, asConnection(), std::placeholders::_1));
 }
 
@@ -170,7 +170,7 @@ void Connection::read(uint32 bytes, const RecvCallback& callback)
                      std::bind(&Connection::onRecv, asConnection(), std::placeholders::_1, std::placeholders::_2));
 
     m_readTimer.cancel();
-    m_readTimer.expires_from_now(std::chrono::seconds(READ_TIMEOUT));
+    m_readTimer.expires_after(std::chrono::seconds(READ_TIMEOUT));
     m_readTimer.async_wait(std::bind(&Connection::onTimeout, asConnection(), std::placeholders::_1));
 }
 
@@ -187,7 +187,7 @@ void Connection::read_until(const std::string& what, const RecvCallback& callbac
                            std::bind(&Connection::onRecv, asConnection(), std::placeholders::_1, std::placeholders::_2));
 
     m_readTimer.cancel();
-    m_readTimer.expires_from_now(std::chrono::seconds(READ_TIMEOUT));
+    m_readTimer.expires_after(std::chrono::seconds(READ_TIMEOUT));
     m_readTimer.async_wait(std::bind(&Connection::onTimeout, asConnection(), std::placeholders::_1));
 }
 
@@ -202,7 +202,7 @@ void Connection::read_some(const RecvCallback& callback)
                              std::bind(&Connection::onRecv, asConnection(), std::placeholders::_1, std::placeholders::_2));
 
     m_readTimer.cancel();
-    m_readTimer.expires_from_now(std::chrono::seconds(READ_TIMEOUT));
+    m_readTimer.expires_after(std::chrono::seconds(READ_TIMEOUT));
     m_readTimer.async_wait(std::bind(&Connection::onTimeout, asConnection(), std::placeholders::_1));
 }
 
@@ -282,7 +282,8 @@ void Connection::onRecv(const boost::system::error_code& error, size_t recvSize)
     if(m_connected) {
         if(!error) {
             if(m_recvCallback) {
-                const char* header = boost::asio::buffer_cast<const char*>(m_inputStream.data());
+                auto it = boost::asio::buffers_begin(m_inputStream.data());
+                const char* header = recvSize > 0 ? &*it : nullptr;
                 m_recvCallback((uint8*)header, recvSize);
             }
         } else
@@ -318,7 +319,7 @@ int Connection::getIp()
     boost::system::error_code error;
     const boost::asio::ip::tcp::endpoint ip = m_socket.remote_endpoint(error);
     if(!error)
-        return boost::endian::native_to_big(ip.address().to_v4().to_ulong());
+        return boost::endian::native_to_big(ip.address().to_v4().to_uint());
 
     g_logger.error("Getting remote ip");
     return 0;

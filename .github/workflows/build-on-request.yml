@@ -95,16 +95,36 @@ jobs:
       - name: MacOS - install physfs pkgconfig luajit xquartz
         run: brew install physfs pkgconfig luajit xquartz
 
+      - name: Restore vcpkg cache
+        id: vcpkg-cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          key: vcpkg-mac-x64-osx-761c81d43335a5d5ccc2ec8ad90bd7e2cbba734e-v1
+          restore-keys: |
+            vcpkg-mac-x64-osx-761c81d43335a5d5ccc2ec8ad90bd7e2cbba734e-
+            vcpkg-mac-x64-osx-
+          path: ${{ runner.workspace }}/vcpkg
+
       - name: Run vcpkg
+        id: run-vcpkg
+        if: steps.vcpkg-cache-restore.outputs.cache-hit != 'true'
         uses: lukka/run-vcpkg@v7
         with:
-          vcpkgArguments: >
-            boost-iostreams boost-asio boost-system boost-variant boost-lockfree boost-beast glew 
-            boost-filesystem boost-uuid libogg libvorbis zlib opengl libzip openal-soft bzip2
-            openssl
           vcpkgDirectory: ${{ runner.workspace }}/vcpkg/
           vcpkgTriplet: x64-osx
           vcpkgGitCommitId: 761c81d43335a5d5ccc2ec8ad90bd7e2cbba734e
+          doNotCache: true
+          vcpkgArguments: >
+            boost-iostreams boost-asio boost-system boost-variant boost-lockfree boost-beast glew
+            boost-filesystem boost-uuid libogg libvorbis zlib opengl libzip openal-soft bzip2
+            openssl
+
+      - name: Save vcpkg cache
+        if: steps.vcpkg-cache-restore.outputs.cache-hit != 'true' && steps.run-vcpkg.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          key: vcpkg-mac-x64-osx-761c81d43335a5d5ccc2ec8ad90bd7e2cbba734e-v1
+          path: ${{ runner.workspace }}/vcpkg
 
       - name: Build with CMake
         uses: lukka/run-cmake@v3

@@ -38,7 +38,7 @@ std::string ip_to_string(uint32 ip)
 uint32 string_to_ip(const std::string& string)
 {
     boost::asio::ip::address_v4 address_v4 = boost::asio::ip::address_v4::from_string(string);
-    return boost::endian::native_to_big(address_v4.to_ulong());
+    return boost::endian::native_to_big(address_v4.to_uint());
 }
 
 std::vector<uint32> listSubnetAddresses(uint32 address, uint8 mask)
