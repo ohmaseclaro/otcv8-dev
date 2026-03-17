@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug_lib|Win32">
@@ -151,7 +151,7 @@
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(OTCLIENT_LIBDEPS);glew32.lib;opengl32.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OTCLIENT_LIBDEPS);glew32s.lib;opengl32.lib</AdditionalDependencies>
       <ShowProgress>NotSet</ShowProgress>
       <LinkStatus>false</LinkStatus>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
