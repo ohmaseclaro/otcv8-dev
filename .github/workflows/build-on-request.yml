@@ -59,7 +59,7 @@ jobs:
 
   Mac:
     name: Build mac os version
-    runs-on: macos-12
+    runs-on: macos-latest
     timeout-minutes: 120
     continue-on-error: true
 
