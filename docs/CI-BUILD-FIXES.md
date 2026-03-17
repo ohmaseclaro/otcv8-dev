@@ -102,7 +102,7 @@ This document records all changes made to get the GitHub Actions Windows build p
 - **io_context:** `reset()` was removed; use `restart()` to clear the stopped state before calling `poll()` again (e.g. in `connection.cpp` `poll()`).
 - **basic_waitable_timer:** `expires_from_now(duration)` was removed; use `expires_after(duration)` everywhere (connection.cpp, proxy_client.cpp). Also `cancel(ec)` → `cancel()` (see BUILD-FIX-LOG Fix 1).
 - **buffer_cast:** `boost::asio::buffer_cast<T>(buf)` was removed. To get a pointer from a streambuf’s data, use `boost::asio::buffers_begin(m_inputStream.data())` and then `&*it` (with a check for empty/recvSize if needed).
-- **address_v4:** `to_ulong()` was removed; use `to_uint()` (returns `uint32_t`) in connection.cpp and stdext/net.cpp.
+- **address_v4:** `to_ulong()` was removed; use `to_uint()`. `from_string(string)` was removed; use `boost::asio::ip::make_address_v4(string)` in stdext/net.cpp.
 - **Timer cancel:** `cancel(ec)` → `cancel()` in session.cpp (Fix 1) and proxy_client.cpp (same pattern).
 
 ### 2.5 Full Boost usage audit (Boost 1.90)
@@ -120,6 +120,65 @@ All Boost-using sources have been checked for 1.90 compatibility. Summary:
 | **Removed** | Boost.Process | Replaced with platform spawnProcessAndWait (§3). |
 
 No remaining uses of: `io_service`, `resolver::query`, resolver iterator, `socket_ops`, `expires_from_now`, `buffer_cast`, `address_v4::to_ulong`, Beast field `.to_string()`, or timer `.cancel(ec)`.
+
+### 2.6 Full Boost 1.90 audit (every occurrence)
+
+Exhaustive audit: every file that touches Boost was checked for every known breaking pattern. Use this as the single source of truth and re-run the checklist after any Boost-related change.
+
+**Files that include Boost (all under `src/`):**
+
+| File | Boost usage | Checked |
+|------|-------------|--------|
+| pch.h | system, asio, beast, io_context, ip/tcp, ssl, algorithm/hex | ✓ |
+| net/connection.cpp, connection.h | asio, endian, io_context, resolver results_type, async_connect(endpoints), expires_after, cancel(), buffers_begin, to_uint, restart() | ✓ |
+| net/server.cpp | asio, io_context, acceptor.cancel() (0-arg) | ✓ |
+| net/protocol.cpp | asio, io_context, post, error_code | ✓ |
+| net/declarations.h | asio namespace alias | ✓ |
+| net/packet_player.cpp | boost::algorithm::unhex, error_code, error::eof | ✓ |
+| http/session.cpp, session.h | io_context, resolver results_type, expires_after, cancel(), Beast field .data()/.size(), get_ssl_category | ✓ |
+| http/websocket.cpp, websocket.h | io_context, resolver results_type, get_lowest_layer, expires_after, cancel(), buffers_to_string | ✓ |
+| http/http.cpp, http.h | io_context, make_work_guard, executor_work_guard | ✓ |
+| proxy/proxy_client.cpp, proxy_client.h | io_context, resolver results_type, results.begin()->endpoint(), expires_after, cancel() (both line 39 and 325) | ✓ |
+| proxy/proxy.h, proxy.cpp | io_context, make_work_guard, executor_work_guard | ✓ |
+| stdext/net.cpp | asio/address_v4, endian, to_uint, lexical_cast, algorithm | ✓ |
+| stdext/uri.cpp, string.cpp | algorithm/string | ✓ |
+| util/crypt.cpp, crypt.h | uuid, uuid_generators, uuid_io, functional/hash | ✓ |
+| otml/otmlparser.cpp | tokenizer | ✓ |
+| platform/win32platform.cpp | algorithm (replace_all, ends_with) | ✓ |
+| ui/uitranslator.cpp | algorithm/string | ✓ |
+| sound/streamsoundsource.cpp | concept_check.hpp (include only) | ✓ |
+| luaengine/lbitlib.cpp | Lua headers; #include &lt;climits&gt; for INT_MAX; #ifndef luaL_newlib | ✓ |
+
+**Patterns searched (zero occurrences of deprecated API):**
+
+- `io_service` → must be `io_context` everywhere
+- `resolver::query` → use `async_resolve(host, port_string, ...)`
+- `resolver::iterator` or `*results` / `*iterator` for connect → use `results_type`, `results.begin()->endpoint()`, `async_connect(socket, endpoints, ...)`
+- `socket_ops`, `host_to_network_long`, `network_to_host_long` → use `boost::endian::native_to_big` / `big_to_native`
+- `g_ioService.reset()` → `g_ioService.restart()`
+- `expires_from_now` → `expires_after`
+- **Timer: `.cancel(ec)` or `.cancel(any_arg)`** → **`.cancel()`** (no arguments). Check **every** call: connection.cpp (all cancel() 0-arg), session.cpp (2×), websocket.cpp (1×), **proxy_client.cpp (2×: line 39 and line 325)**.
+- `buffer_cast` → `buffers_begin(stream.data())` then `&*it`
+- `address_v4::to_ulong()` → `to_uint()`
+- Beast HTTP field `.to_string()` → `std::string(field.data(), field.size())`
+- `#include <boost/process.hpp>` or `boost::process::child` / `args` → use `g_platform.spawnProcessAndWait` / `getBinaryPath()`
+
+**Re-run audit (grep from repo root):**
+
+```bash
+# Must be zero matches for deprecated patterns:
+grep -rn '\.cancel\s*(\s*[^)]' src/   # timer/acceptor cancel with arg → fix to cancel()
+grep -rn 'expires_from_now' src/
+grep -rn 'buffer_cast' src/
+grep -rn 'to_ulong' src/
+grep -rn 'io_service' src/
+grep -rn 'resolver::query\|resolver::iterator' src/
+grep -rn 'socket_ops\|host_to_network_long\|network_to_host_long' src/
+grep -rn 'g_ioService\.reset' src/
+grep -rn 'boost::process' src/ --include='*.cpp' --include='*.h'
+# Beast: no msg["X"].to_string() in session.cpp
+grep -rn '\.to_string()' src/framework/http/session.cpp
+```
 
 ---
 

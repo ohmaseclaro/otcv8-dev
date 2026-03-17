@@ -123,6 +123,7 @@ This document records individual build fixes applied after the initial CI/CD and
 
 - Both timer calls: `m_timer.expires_from_now(...)` → `m_timer.expires_after(...)`.
 - In the destructor/lambda (line 40): `m_timer.cancel(ec)` → `m_timer.cancel()` (same as Fix 1; timer no longer takes an error_code).
+- In the disconnect path (line 325): `m_timer.cancel(ecc)` → `m_timer.cancel()` (same API; second occurrence was missed in the initial audit).
 
 **File: `src/framework/stdext/net.cpp`**
 
@@ -136,6 +137,19 @@ This document records individual build fixes applied after the initial CI/CD and
 | `expires_from_now` | Renamed in Asio 1.24+ | `expires_after(duration)` |
 | `buffer_cast` | Removed from Asio | `buffers_begin(stream.data())`, then `&*it` |
 | `address_v4::to_ulong` | Removed | `address_v4.to_uint()` |
+
+---
+
+---
+
+## Fix 4: address_v4::from_string removed in Boost.Asio 1.90 (stdext/net.cpp)
+
+**Context:** Windows build failed: `'from_string': is not a member of 'boost::asio::ip::address_v4'` in `src/framework/stdext/net.cpp` line 40.
+
+### Change
+
+**File:** `src/framework/stdext/net.cpp`  
+- **string_to_ip:** `boost::asio::ip::address_v4::from_string(string)` → `boost::asio::ip::make_address_v4(string)` (Boost 1.90 replacement).
 
 ---
 
