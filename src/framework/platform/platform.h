@@ -32,6 +32,8 @@ class Platform
 public:
     void processArgs(std::vector<std::string>& args);
     bool spawnProcess(std::string process, const std::vector<std::string>& args);
+    /** Launch process; if waitSeconds > 0 wait up to that many seconds. If exitCode is non-null and process exits in time, set *exitCode. Returns true if process was started. */
+    bool spawnProcessAndWait(const std::string& process, const std::vector<std::string>& args, int waitSeconds, int* exitCode = nullptr);
     int getProcessId();
     bool isProcessRunning(const std::string& name);
     bool killProcess(const std::string& name);

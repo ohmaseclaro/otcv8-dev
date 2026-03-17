@@ -31,10 +31,6 @@
 #include <framework/http/http.h>
 #include <queue>
 #include <regex>
-
-#if not(defined(ANDROID) || defined(FREE_VERSION))
-#include <boost/process.hpp>
-#endif
 #include <locale>
 #include <zlib.h>
 
@@ -128,13 +124,11 @@ bool ResourceManager::launchCorrect(const std::string& product, const std::strin
     if (binary == m_binaryPath)
         return false;
 
-    boost::process::child c(binary.string());
-    std::error_code ec2;
-    if (c.wait_for(std::chrono::seconds(5), ec2)) {
-        return c.exit_code() == 0;
-    }
-
-    c.detach();
+    int exitCode = -1;
+    if (!g_platform.spawnProcessAndWait(binary.string(), {}, 5, &exitCode))
+        return false;
+    if (exitCode >= 0)
+        return exitCode == 0;
     return true;
 #else
     return false;

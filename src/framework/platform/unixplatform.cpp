@@ -31,6 +31,7 @@
 #include <framework/core/eventdispatcher.h>
 
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <execinfo.h>
 
 void Platform::processArgs(std::vector<std::string>& args)
@@ -59,6 +60,41 @@ bool Platform::spawnProcess(std::string process, const std::vector<std::string>&
             _exit(EXIT_FAILURE);
     }
 
+    return true;
+}
+
+bool Platform::spawnProcessAndWait(const std::string& process, const std::vector<std::string>& args, int waitSeconds, int* exitCode)
+{
+    struct stat sts;
+    if (stat(process.c_str(), &sts) == -1 && errno == ENOENT)
+        return false;
+
+    pid_t pid = fork();
+    if (pid == -1)
+        return false;
+
+    if (pid == 0) {
+        std::vector<char*> cargs(args.size() + 2);
+        cargs[0] = const_cast<char*>(process.c_str());
+        for (size_t i = 0; i < args.size(); ++i)
+            cargs[i + 1] = const_cast<char*>(args[i].c_str());
+        cargs[args.size() + 1] = nullptr;
+        execv(process.c_str(), cargs.data());
+        _exit(EXIT_FAILURE);
+    }
+
+    if (waitSeconds > 0) {
+        int status = 0;
+        for (int waited = 0; waited < waitSeconds; ++waited) {
+            pid_t r = waitpid(pid, &status, WNOHANG);
+            if (r == pid) {
+                if (exitCode && WIFEXITED(status))
+                    *exitCode = WEXITSTATUS(status);
+                break;
+            }
+            sleep(1);
+        }
+    }
     return true;
 }
 

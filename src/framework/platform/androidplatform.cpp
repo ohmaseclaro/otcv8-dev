@@ -44,6 +44,15 @@ bool Platform::spawnProcess(std::string process, const std::vector<std::string>&
     return false;
 }
 
+bool Platform::spawnProcessAndWait(const std::string& process, const std::vector<std::string>& args, int waitSeconds, int* exitCode)
+{
+    (void)process;
+    (void)args;
+    (void)waitSeconds;
+    (void)exitCode;
+    return false;
+}
+
 int Platform::getProcessId()
 {
     return getpid();

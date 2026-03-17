@@ -66,6 +66,50 @@ bool Platform::spawnProcess(std::string process, const std::vector<std::string>&
     return false;
 }
 
+bool Platform::spawnProcessAndWait(const std::string& process, const std::vector<std::string>& args, int waitSeconds, int* exitCode)
+{
+    std::string exe = process;
+    boost::replace_all(exe, "/", "\\");
+    if (!boost::ends_with(exe, ".exe"))
+        exe += ".exe";
+
+    std::string cmdLine = stdext::format("\"%s\"", exe);
+    for (size_t i = 0; i < args.size(); ++i)
+        cmdLine += stdext::format(" \"%s\"", args[i]);
+
+    std::wstring wExe = stdext::utf8_to_utf16(exe);
+    std::wstring wCmdLine = stdext::utf8_to_utf16(cmdLine);
+    std::vector<wchar_t> cmdLineBuf(wCmdLine.size() + 1);
+    std::copy(wCmdLine.begin(), wCmdLine.end(), cmdLineBuf.begin());
+    cmdLineBuf[wCmdLine.size()] = L'\0';
+
+    STARTUPINFOW si = {};
+    si.cb = sizeof(si);
+    PROCESS_INFORMATION pi = {};
+
+    if (!CreateProcessW(wExe.c_str(), cmdLineBuf.data(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
+        return false;
+
+    bool exited = false;
+    int code = -1;
+    if (waitSeconds > 0) {
+        DWORD ms = static_cast<DWORD>(waitSeconds) * 1000;
+        if (WaitForSingleObject(pi.hProcess, ms) == WAIT_OBJECT_0) {
+            DWORD dwordCode = 0;
+            if (GetExitCodeProcess(pi.hProcess, &dwordCode)) {
+                code = static_cast<int>(dwordCode);
+                exited = true;
+            }
+        }
+    }
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+
+    if (exitCode)
+        *exitCode = code;
+    return true;
+}
+
 int Platform::getProcessId()
 {
     return GetCurrentProcessId();
