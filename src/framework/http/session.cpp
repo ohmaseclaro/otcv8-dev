@@ -122,11 +122,14 @@ void HttpSession::on_read_header(const boost::system::error_code& ec, size_t byt
 
     auto msg = m_response.get();
     m_result->status = msg.result_int();
-    m_result->size = atoi(msg["Content-Length"].to_string().c_str());
+    {
+        auto cl = msg["Content-Length"];
+        m_result->size = atoi(std::string(cl.data(), cl.size()).c_str());
+    }
     auto location = msg["Location"];
 
-    if (!location.empty()) {        
-        auto session = std::make_shared<HttpSession>(m_service, location.to_string(), m_agent, m_timeout, m_isJson, m_result, m_callback);
+    if (!location.empty()) {
+        auto session = std::make_shared<HttpSession>(m_service, std::string(location.data(), location.size()), m_agent, m_timeout, m_isJson, m_result, m_callback);
         session->start();
         return close();
     }
@@ -215,7 +218,7 @@ void HttpSession::onTimeout(const boost::system::error_code& error)
 void HttpSession::onError(const std::string& error, const std::string& details) {
     boost::system::error_code ec;
     m_socket.close(ec);
-    m_timer.cancel(ec);
+    m_timer.cancel();
     if (!m_result->finished) {
         m_result->finished = true;
         m_result->error = error;
