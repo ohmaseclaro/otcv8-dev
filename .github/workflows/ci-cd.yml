@@ -50,6 +50,14 @@ jobs:
           # windows-2022 does not expose VS2019 generator; build vcpkg deps with v143.
           $env:VCPKG_PLATFORM_TOOLSET = "v143"
 
+          # Pinned legacy openal-soft port forces VS2019 generator; rewrite for windows-2022.
+          $openalPort = "$vcpkgRoot\ports\openal-soft\portfile.cmake"
+          if (Test-Path $openalPort) {
+            $openal = Get-Content $openalPort -Raw
+            $openal = $openal -replace "Visual Studio 16 2019", "Visual Studio 17 2022"
+            Set-Content $openalPort $openal
+          }
+
           # Pinned legacy vcpkg scripts fetch stale MSYS artifacts during pkgconfig fixups.
           # Override fixup helper to avoid mirror 404s (bzip2/liblzma and similar ports).
           $fixupScript = "$vcpkgRoot\scripts\cmake\vcpkg_fixup_pkgconfig.cmake"
