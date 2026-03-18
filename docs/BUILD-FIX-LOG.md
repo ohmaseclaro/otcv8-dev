@@ -157,12 +157,12 @@ This document records individual build fixes applied after the initial CI/CD and
 
 ## Fix 5: Linker cannot open glew32.lib (vcpkg static GLEW)
 
-**Context:** Windows build compiled successfully but link failed: `LNK1181: cannot open input file 'glew32.lib'`. With vcpkg `x86-windows-static`, GLEW is built as a static library; the import lib name is `glew32s.lib`, not `glew32.lib`.
+**Context:** Windows link failed: `glew32.lib` not found (DLL import lib). `glew32s.lib` also not found.
 
 ### Change
 
 **File:** `vc16/otclient.vcxproj`  
-- **OpenGL|Win32 AdditionalDependencies:** `glew32.lib` → `glew32s.lib`.
+- **OpenGL|Win32:** GLEW from vcpkg static is installed as **`libglew32.lib`** (CMake target `glew_s`: `PREFIX lib` + `OUTPUT_NAME glew32` on Windows). Use `libglew32.lib` + `opengl32.lib`.
 
 ---
 

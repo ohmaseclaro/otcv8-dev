@@ -118,7 +118,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='OpenGL|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>$(PREPROCESSOR_DEFS);%(PreprocessorDefinitions);WITH_ENCRYPTION;_SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING;_SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNINGS;NDEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>$(PREPROCESSOR_DEFS);%(PreprocessorDefinitions);WITH_ENCRYPTION;GLEW_STATIC;_SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING;_SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNINGS;NDEBUG</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <Optimization>MaxSpeed</Optimization>
@@ -151,7 +151,7 @@
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(OTCLIENT_LIBDEPS);glew32s.lib;opengl32.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OTCLIENT_LIBDEPS);libglew32.lib;opengl32.lib</AdditionalDependencies>
       <ShowProgress>NotSet</ShowProgress>
       <LinkStatus>false</LinkStatus>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
