@@ -8,7 +8,7 @@ on:
 jobs:
   Windows:
     name: Build windows version
-    runs-on: windows-2019
+    runs-on: windows-2022
     timeout-minutes: 90
     if: |
       !contains(github.event.head_commit.message, '[skip release]')
@@ -19,12 +19,12 @@ jobs:
       )
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
           submodules: recursive
 
     - name: Setup MSBuild and add to PATH
-      uses: microsoft/setup-msbuild@v1.0.2
+      uses: microsoft/setup-msbuild@v2
       id: setup_msbuild
 
     - name: Run vcpkg
@@ -32,7 +32,7 @@ jobs:
       with:
         vcpkgDirectory: ${{ runner.workspace }}/vcpkg/
         vcpkgTriplet: x86-windows-static
-        vcpkgGitCommitId: 3b3bd424827a1f7f4813216f6b32b6c61e386b2e
+        vcpkgGitCommitId: 4bc3a47c7a63506e215e04e1473368adbaea6c27
         vcpkgArguments: >
           boost-iostreams boost-asio boost-beast boost-system boost-variant boost-lockfree boost-process boost-program-options boost-uuid boost-filesystem
           luajit glew physfs openal-soft libogg libvorbis zlib libzip bzip2 openssl liblzma
@@ -45,8 +45,8 @@ jobs:
       timeout-minutes: 60
       run: |
         cd vc16
-        MSBuild /property:Configuration=DirectX /p:BUILD_REVISION=${{github.run_number}}
-        MSBuild /property:Configuration=OpenGL /p:BUILD_REVISION=${{github.run_number}}
+        MSBuild /property:Configuration=DirectX /p:PlatformToolset=v143 /p:BUILD_REVISION=${{github.run_number}}
+        MSBuild /property:Configuration=OpenGL /p:PlatformToolset=v143 /p:BUILD_REVISION=${{github.run_number}}
 
     #- name: Sign binaries
     #  run: |
@@ -65,7 +65,7 @@ jobs:
 
   Android:
     name: Build android version
-    runs-on: windows-2019
+    runs-on: windows-2022
     timeout-minutes: 60
     if: |
       !contains(github.event.head_commit.message, '[skip release]')
@@ -76,12 +76,12 @@ jobs:
       )
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
           submodules: recursive
 
     - name: Setup MSBuild and add to PATH
-      uses: microsoft/setup-msbuild@v1.0.2
+      uses: microsoft/setup-msbuild@v2
       id: setup_msbuild
 
     - name: Create data.zip for android
@@ -128,7 +128,7 @@ jobs:
       )
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
           submodules: recursive
 
@@ -182,7 +182,7 @@ jobs:
       )
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
           submodules: recursive
 
@@ -225,7 +225,7 @@ jobs:
 
   Release:
     name: Test and release
-    runs-on: windows-2019
+    runs-on: windows-2022
     needs: [Windows, Android, Mac, Linux]
     timeout-minutes: 120
     if: |
@@ -237,7 +237,7 @@ jobs:
       )
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         submodules: recursive
 
@@ -321,7 +321,7 @@ jobs:
         if-no-files-found: error
 
     - name: Checkout public otclientv8
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         repository: OTCv8/otclientv8
         path: otclientv8
