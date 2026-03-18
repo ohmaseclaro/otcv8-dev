@@ -36,6 +36,9 @@ jobs:
           git -C "$vcpkgRoot" checkout --force 3b3bd424827a1f7f4813216f6b32b6c61e386b2e
           & "$vcpkgRoot\bootstrap-vcpkg.bat" -disableMetrics
 
+          # windows-2022 does not expose VS2019 generator; build vcpkg deps with v143.
+          $env:VCPKG_PLATFORM_TOOLSET = "v143"
+
           # Pinned legacy vcpkg scripts fetch stale MSYS artifacts during pkgconfig fixups.
           # Override fixup helper to avoid mirror 404s (bzip2/liblzma and similar ports).
           $fixupScript = "$vcpkgRoot\scripts\cmake\vcpkg_fixup_pkgconfig.cmake"
