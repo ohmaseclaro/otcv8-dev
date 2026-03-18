@@ -1,0 +1,5 @@
+# Bump this file when vcpkg commit, package list, or patch scripts change (invalidates Actions cache).
+VCPKG_COMMIT=3b3bd424827a1f7f4813216f6b32b6c61e386b2e
+TRIPLET=x86-windows-static
+PACKAGES=boost-iostreams boost-asio boost-beast boost-system boost-variant boost-lockfree boost-process boost-program-options boost-uuid boost-filesystem luajit glew physfs openal-soft libogg libvorbis zlib libzip bzip2 openssl liblzma
+PATCH_SET=msys-pkgconfig-openal-winmm
