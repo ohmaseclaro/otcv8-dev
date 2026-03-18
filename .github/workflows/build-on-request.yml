@@ -27,8 +27,7 @@ jobs:
 
       - name: Run vcpkg
         id: run-vcpkg
-        if: steps.vcpkg-cache-restore.outputs.cache-hit != 'true'
-        uses: lukka/run-vcpkg@v11
+        uses: lukka/run-vcpkg@v7
         with:
           vcpkgDirectory: ${{ runner.workspace }}/vcpkg/
           vcpkgTriplet: x86-windows-static
