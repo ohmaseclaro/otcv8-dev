@@ -52,6 +52,10 @@ jobs:
           if (Test-Path $tripletFile) {
             $triplet = Get-Content $tripletFile -Raw
             $triplet = $triplet -replace "(?m)^\s*set\(VCPKG_PLATFORM_TOOLSET\s+v142\s*\)\s*$", "set(VCPKG_PLATFORM_TOOLSET v143)"
+            # Force override at file end in case triplet sets toolset again later.
+            if ($triplet -notmatch "(?m)^\s*set\(VCPKG_PLATFORM_TOOLSET\s+v143\s*\)\s*$") {
+              $triplet += "`r`nset(VCPKG_PLATFORM_TOOLSET v143)`r`n"
+            }
             Set-Content $tripletFile $triplet
           }
           $env:VCPKG_PLATFORM_TOOLSET = "v143"
