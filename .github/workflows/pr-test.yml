@@ -36,13 +36,14 @@ jobs:
           git -C "$vcpkgRoot" checkout --force 3b3bd424827a1f7f4813216f6b32b6c61e386b2e
           & "$vcpkgRoot\bootstrap-vcpkg.bat" -disableMetrics
 
-          # Old bzip2 port on this pinned vcpkg requires stale MSYS artifacts; skip only pkgconfig fixup.
-          $bzPort = "$vcpkgRoot\ports\bzip2\portfile.cmake"
-          $bz = Get-Content $bzPort -Raw
-          if ($bz -match "(?m)^\s*vcpkg_fixup_pkgconfig\(\)\s*$") {
-            $bz = $bz -replace "(?m)^\s*vcpkg_fixup_pkgconfig\(\)\s*$", "# patched in CI: skip msys pkgconfig fixup"
-            Set-Content $bzPort $bz
-          }
+          # Pinned legacy vcpkg scripts fetch stale MSYS artifacts during pkgconfig fixups.
+          # Override fixup helper to avoid mirror 404s (bzip2/liblzma and similar ports).
+          $fixupScript = "$vcpkgRoot\scripts\cmake\vcpkg_fixup_pkgconfig.cmake"
+          Set-Content $fixupScript @"
+          function(vcpkg_fixup_pkgconfig)
+            message(STATUS "Patched in CI: skipping vcpkg_fixup_pkgconfig to avoid legacy MSYS downloads")
+          endfunction()
+          "@
 
           & "$vcpkgRoot\vcpkg.exe" install --triplet x86-windows-static --clean-after-build boost-iostreams boost-asio boost-beast boost-system boost-variant boost-lockfree boost-process boost-program-options boost-uuid boost-filesystem luajit glew physfs openal-soft libogg libvorbis zlib libzip openssl liblzma
 
