@@ -36,7 +36,13 @@ jobs:
           git -C "$vcpkgRoot" checkout --force 3b3bd424827a1f7f4813216f6b32b6c61e386b2e
           & "$vcpkgRoot\bootstrap-vcpkg.bat" -disableMetrics
 
-          # windows-2022 does not expose VS2019 generator; build vcpkg deps with v143.
+          # windows-2022 does not expose VS2019 generator; force triplet toolset to v143.
+          $tripletFile = "$vcpkgRoot\triplets\community\x86-windows-static.cmake"
+          if (Test-Path $tripletFile) {
+            $triplet = Get-Content $tripletFile -Raw
+            $triplet = $triplet -replace "(?m)^\s*set\(VCPKG_PLATFORM_TOOLSET\s+v142\s*\)\s*$", "set(VCPKG_PLATFORM_TOOLSET v143)"
+            Set-Content $tripletFile $triplet
+          }
           $env:VCPKG_PLATFORM_TOOLSET = "v143"
 
           # Pinned legacy openal-soft port forces VS2019 generator; rewrite for windows-2022.
