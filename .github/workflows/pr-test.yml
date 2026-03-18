@@ -46,6 +46,17 @@ jobs:
           "@
 
           & "$vcpkgRoot\vcpkg.exe" install --triplet x86-windows-static --clean-after-build boost-iostreams boost-asio boost-beast boost-system boost-variant boost-lockfree boost-process boost-program-options boost-uuid boost-filesystem luajit glew physfs openal-soft libogg libvorbis zlib libzip openssl liblzma
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "vcpkg install failed; dumping latest buildtrees logs"
+            Get-ChildItem "$vcpkgRoot\buildtrees" -Recurse -Filter "*-out.log" |
+              Sort-Object LastWriteTime -Descending |
+              Select-Object -First 20 |
+              ForEach-Object {
+                Write-Host "===== $($_.FullName) ====="
+                Get-Content $_.FullName -Tail 200
+              }
+            exit $LASTEXITCODE
+          }
 
       - name: Save vcpkg cache
         if: steps.vcpkg-cache-restore.outputs.cache-hit != 'true' && steps.run-vcpkg.outcome == 'success'
